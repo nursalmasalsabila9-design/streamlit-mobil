@@ -3,137 +3,160 @@ import pickle
 import streamlit as st
 import numpy as np
 
-# ==========================================
-# 1. KONFIGURASI HALAMAN
-# ==========================================
-
+# =====================================================
+# KONFIGURASI APLIKASI
+# =====================================================
 st.set_page_config(
     page_title="Toyota Car Price Estimator",
     page_icon="🚘",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ==========================================
-# 2. SESSION STATE
-# ==========================================
-
+# =====================================================
+# SESSION STATE
+# =====================================================
 if "theme" not in st.session_state:
-    st.session_state.theme = "Dark"
+    st.session_state.theme = "Dark Mode"
 
 if "hasil_prediksi" not in st.session_state:
     st.session_state.hasil_prediksi = None
 
-# ==========================================
-# 3. PENGATURAN TEMA
-# ==========================================
+if "input_terakhir" not in st.session_state:
+    st.session_state.input_terakhir = None
 
-st.sidebar.title("⚙️ Pengaturan")
 
-tema = st.sidebar.radio(
-    "Pilih Tampilan",
-    ["Dark Mode", "Light Mode"],
-    index=0 if st.session_state.theme == "Dark" else 1
-)
+# =====================================================
+# PILIHAN TEMA
+# =====================================================
+with st.sidebar:
+    st.title("🚘 AUTO ESTIMATOR")
+    st.caption("TOYOTA USED CAR VALUATION")
+    st.divider()
 
-st.session_state.theme = (
-    "Dark" if tema == "Dark Mode" else "Light"
-)
+    pilihan_tema = st.radio(
+        "Tampilan aplikasi",
+        ["Dark Mode", "Light Mode"],
+        index=0 if st.session_state.theme == "Dark Mode" else 1
+    )
 
-# ==========================================
-# 4. WARNA TEMA
-# ==========================================
+    st.session_state.theme = pilihan_tema
 
-if st.session_state.theme == "Dark":
+    st.divider()
 
-    bg = "#101C2E"
-    text = "#F5F9FF"
-    card = "#203650"
-    muted = "#B3C4D9"
-    border = "#3B5675"
-    input_bg = "#263D59"
+    st.subheader("Tentang Aplikasi")
+    st.write(
+        "Aplikasi ini digunakan untuk memperkirakan harga "
+        "mobil bekas Toyota menggunakan algoritma "
+        "Machine Learning Linear Regression."
+    )
 
+    st.divider()
+
+    st.caption("MODEL INFORMATION")
+    st.write("Algoritma: Linear Regression")
+    st.write("Dataset: Toyota Used Cars")
+    st.write("Mata uang: GBP dan IDR")
+
+    st.divider()
+    st.caption("Toyota Car Price Estimator")
+    st.caption("Machine Learning Application")
+
+
+# =====================================================
+# TEMA DAN WARNA
+# =====================================================
+if st.session_state.theme == "Dark Mode":
+    bg_color = "#0B1424"
+    card_color = "#142238"
+    text_color = "#F2F6FC"
+    muted_color = "#A5B4C9"
+    border_color = "#2D425E"
+    accent_color = "#55A9FF"
 else:
+    bg_color = "#F3F6FB"
+    card_color = "#FFFFFF"
+    text_color = "#172B46"
+    muted_color = "#718198"
+    border_color = "#DCE5F0"
+    accent_color = "#267DD1"
 
-    bg = "#F0F5FC"
-    text = "#172B46"
-    card = "#FFFFFF"
-    muted = "#71839C"
-    border = "#D9E4F1"
-    input_bg = "#FFFFFF"
 
-# ==========================================
-# 5. CUSTOM CSS
-# ==========================================
-
+# =====================================================
+# CSS TAMPILAN
+# =====================================================
 st.markdown(
     f"""
     <style>
-
     .stApp {{
-        background-color: {bg};
-        color: {text};
+        background-color: {bg_color};
+        color: {text_color};
+    }}
+
+    [data-testid="stSidebar"] {{
+        background-color: {card_color};
+        border-right: 1px solid {border_color};
     }}
 
     [data-testid="stHeader"] {{
-        background-color: transparent;
+        background-color: {bg_color};
     }}
 
-    .block-container {{
-        max-width: 1150px;
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+    h1, h2, h3, h4, p, label {{
+        color: {text_color} !important;
     }}
 
-    h1, h2, h3, p, label {{
-        color: {text};
+    [data-testid="stCaptionContainer"] p {{
+        color: {muted_color} !important;
+    }}
+
+    [data-testid="stMetric"] {{
+        background-color: {card_color};
+        border: 1px solid {border_color};
+        padding: 20px;
+        border-radius: 12px;
+    }}
+
+    [data-testid="stMetricLabel"] {{
+        color: {muted_color} !important;
+    }}
+
+    [data-testid="stMetricValue"] {{
+        color: {accent_color} !important;
+        font-weight: 700;
     }}
 
     div[data-testid="stNumberInput"] input {{
-        background-color: {input_bg};
-        color: {text};
-        border: 1px solid {border};
-        border-radius: 10px;
-    }}
-
-    div[data-testid="stNumberInput"] button {{
-        background-color: {input_bg};
-        color: {text};
+        background-color: {card_color};
+        color: {text_color};
+        border: 1px solid {border_color};
+        border-radius: 8px;
     }}
 
     div.stButton > button {{
-        width: 100%;
-        min-height: 50px;
-        background: linear-gradient(100deg, #246BCE, #439CF4);
+        background-color: {accent_color};
         color: white;
         border: none;
-        border-radius: 12px;
-        font-weight: bold;
-        font-size: 15px;
+        border-radius: 9px;
+        min-height: 48px;
+        font-weight: 700;
+        width: 100%;
+        transition: 0.2s;
     }}
 
     div.stButton > button:hover {{
+        background-color: #287CC5;
         color: white;
         border: none;
-        background: #1958AE;
     }}
 
-    div[data-testid="stMetric"] {{
-        background-color: {card};
-        border: 1px solid {border};
-        padding: 18px;
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
         border-radius: 14px;
-    }}
-
-    div[data-testid="stMetricLabel"] {{
-        color: {muted};
-    }}
-
-    div[data-testid="stMetricValue"] {{
-        color: {text};
+        border-color: {border_color};
     }}
 
     hr {{
-        border-color: {border};
+        border-color: {border_color};
     }}
 
     </style>
@@ -141,266 +164,234 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ==========================================
-# 6. MEMUAT MODEL
-# ==========================================
 
+# =====================================================
+# LOAD MODEL
+# =====================================================
 @st.cache_resource
 def load_model():
-
     with open("estimasi_mobil.sav", "rb") as file:
         return pickle.load(file)
 
+
 try:
-
     model = load_model()
-
 except Exception as e:
-
-    st.error("Model estimasi_mobil.sav gagal dimuat.")
+    st.error("Model tidak dapat dimuat. Pastikan file estimasi_mobil.sav tersedia.")
     st.exception(e)
     st.stop()
 
-# ==========================================
-# 7. HEADER APLIKASI
-# ==========================================
 
-st.markdown(
-    """
-    <div style="
-        background: linear-gradient(120deg, #183B65, #2368A9, #328BD2);
-        padding: 30px;
-        border-radius: 20px;
-        margin-bottom: 20px;
-    ">
-        <div style="
-            font-size: 13px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            color: #D5E9FF;
-        ">
-            SMART AUTOMOTIVE SYSTEM
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# Judul menggunakan komponen asli Streamlit
-st.title("🚘 Toyota Car Price Estimator")
-
-# Deskripsi menggunakan komponen asli Streamlit
-st.write(
-    "Sistem estimasi harga mobil bekas Toyota "
-    "menggunakan teknologi Machine Learning."
-)
-
-st.write("")
-
-# ==========================================
-# 8. FORM SPESIFIKASI MOBIL
-# ==========================================
-
-st.subheader("🚗 Spesifikasi Kendaraan")
+# =====================================================
+# HEADER UTAMA
+# =====================================================
+st.title("Toyota Car Price Estimator")
 
 st.caption(
-    "Masukkan informasi kendaraan untuk mendapatkan estimasi harga."
+    "SMART AUTOMOTIVE VALUATION SYSTEM  |  "
+    "Machine Learning Powered"
 )
 
-col1, col2 = st.columns(2)
-
-with col1:
-
-    year = st.number_input(
-        "📅 Tahun Mobil",
-        min_value=1990,
-        max_value=2026,
-        value=2019,
-        step=1
-    )
-
-    mileage = st.number_input(
-        "🛣️ Jarak Tempuh (KM)",
-        min_value=0,
-        value=5000,
-        step=1000
-    )
-
-    tax = st.number_input(
-        "💰 Pajak Mobil",
-        min_value=0,
-        value=145,
-        step=5
-    )
-
-with col2:
-
-    mpg = st.number_input(
-        "⛽ Konsumsi BBM (MPG)",
-        min_value=0.0,
-        value=30.2,
-        step=0.1
-    )
-
-    engineSize = st.number_input(
-        "⚙️ Ukuran Mesin (Engine Size)",
-        min_value=0.0,
-        value=2.0,
-        step=0.1
-    )
-
-# ==========================================
-# 9. RINGKASAN KENDARAAN
-# ==========================================
+st.write(
+    "Sistem estimasi harga mobil bekas Toyota "
+    "berdasarkan spesifikasi kendaraan."
+)
 
 st.divider()
 
-st.subheader("📋 Ringkasan Kendaraan")
 
-summary1, summary2, summary3, summary4, summary5 = st.columns(5)
+# =====================================================
+# INFORMASI SINGKAT
+# =====================================================
+col1, col2, col3 = st.columns(3)
 
-with summary1:
-    st.metric("Tahun", str(year))
+with col1:
+    st.metric("MODEL", "Linear Regression")
 
-with summary2:
-    st.metric("Jarak Tempuh", f"{mileage:,} KM")
+with col2:
+    st.metric("BRAND", "Toyota")
 
-with summary3:
-    st.metric("Pajak", f"{tax:,}")
+with col3:
+    st.metric("CURRENCY", "GBP / IDR")
 
-with summary4:
-    st.metric("Konsumsi BBM", f"{mpg} MPG")
-
-with summary5:
-    st.metric("Ukuran Mesin", f"{engineSize} L")
-
-# ==========================================
-# 10. KURS RUPIAH
-# ==========================================
-
-# Kurs asumsi 1 GBP = Rp19.000
-kurs = 19000
-
-# ==========================================
-# 11. PROSES PREDIKSI
-# ==========================================
 
 st.write("")
 
-if st.button("✦ HITUNG ESTIMASI HARGA MOBIL"):
 
-    try:
+# =====================================================
+# FORM INPUT
+# =====================================================
+with st.container(border=True):
 
-        input_data = np.array([
-            [year, mileage, tax, mpg, engineSize]
-        ])
+    st.subheader("Vehicle Specifications")
+    st.caption("Masukkan spesifikasi kendaraan untuk melakukan estimasi harga.")
 
-        # Prediksi menggunakan model
-        predict = float(model.predict(input_data)[0])
+    col1, col2 = st.columns(2)
 
-        # Konversi GBP ke Rupiah
-        harga_idr = predict * kurs
+    with col1:
+        year = st.number_input(
+            "Tahun Produksi",
+            min_value=1990,
+            max_value=2026,
+            value=2018,
+            step=1,
+            help="Tahun produksi kendaraan."
+        )
 
-        # Konversi ke juta Rupiah
-        harga_juta = harga_idr / 1000000
+        mileage = st.number_input(
+            "Jarak Tempuh (Miles)",
+            min_value=0,
+            max_value=500000,
+            value=30000,
+            step=1000,
+            help="Total jarak tempuh kendaraan dalam miles."
+        )
 
-        # Simpan hasil prediksi
-        st.session_state.hasil_prediksi = {
-            "pounds": predict,
-            "idr": harga_idr,
-            "juta": harga_juta
-        }
+        tax = st.number_input(
+            "Pajak Kendaraan (£)",
+            min_value=0,
+            max_value=1000,
+            value=150,
+            step=5,
+            help="Nilai pajak kendaraan dalam Poundsterling."
+        )
 
-    except Exception as e:
+    with col2:
+        mpg = st.number_input(
+            "Konsumsi BBM (MPG)",
+            min_value=0.0,
+            max_value=200.0,
+            value=50.0,
+            step=0.5,
+            help="Konsumsi bahan bakar dalam miles per gallon."
+        )
 
-        st.error("Terjadi kesalahan saat melakukan prediksi.")
-        st.exception(e)
+        engineSize = st.number_input(
+            "Kapasitas Mesin (Liter)",
+            min_value=0.0,
+            max_value=10.0,
+            value=1.8,
+            step=0.1,
+            help="Kapasitas mesin kendaraan."
+        )
 
-# ==========================================
-# 12. HASIL PREDIKSI
-# ==========================================
+    st.write("")
 
+    tombol_prediksi = st.button(
+        "GENERATE PRICE ESTIMATION",
+        use_container_width=True
+    )
+
+
+# =====================================================
+# PROSES PREDIKSI
+# =====================================================
+if tombol_prediksi:
+
+    # Urutan fitur tetap sama dengan model
+    input_data = np.array([[
+        year,
+        mileage,
+        tax,
+        mpg,
+        engineSize
+    ]])
+
+    predict = float(model.predict(input_data)[0])
+
+    # Konversi GBP ke IDR
+    kurs = 19000
+    harga_idr = predict * kurs
+    harga_juta = harga_idr / 1000000
+
+    # Simpan hasil prediksi
+    st.session_state.hasil_prediksi = {
+        "gbp": predict,
+        "idr": harga_idr,
+        "juta": harga_juta
+    }
+
+    st.session_state.input_terakhir = {
+        "year": year,
+        "mileage": mileage,
+        "tax": tax,
+        "mpg": mpg,
+        "engineSize": engineSize
+    }
+
+
+# =====================================================
+# HASIL ESTIMASI
+# =====================================================
 if st.session_state.hasil_prediksi is not None:
 
     hasil = st.session_state.hasil_prediksi
 
+    st.write("")
     st.divider()
 
-    st.subheader("💰 Hasil Estimasi Harga")
+    st.subheader("Estimated Vehicle Value")
+    st.caption("Hasil estimasi berdasarkan spesifikasi kendaraan yang dimasukkan.")
 
-    st.caption(
-        "Berikut hasil estimasi berdasarkan spesifikasi kendaraan."
-    )
+    with st.container(border=True):
 
-    result1, result2, result3 = st.columns(3)
+        st.caption("ESTIMATED PRICE IN POUNDSTERLING")
 
-    with result1:
-
-        st.metric(
-            label="HARGA DALAM POUNDS",
-            value=f"£{hasil['pounds']:,.2f}"
+        st.title(
+            f"£{hasil['gbp']:,.2f}"
         )
 
-    with result2:
+        st.divider()
 
-        st.metric(
-            label="HARGA DALAM RUPIAH",
-            value=f"Rp {hasil['idr']:,.0f}"
-        )
+        col1, col2 = st.columns(2)
 
-    with result3:
+        with col1:
+            st.metric(
+                "ESTIMASI HARGA DALAM RUPIAH",
+                f"Rp {hasil['idr']:,.0f}"
+            )
 
-        st.metric(
-            label="HARGA DALAM JUTA RUPIAH",
-            value=f"Rp {hasil['juta']:,.2f} juta"
-        )
+        with col2:
+            st.metric(
+                "ESTIMASI HARGA DALAM JUTA RUPIAH",
+                f"Rp {hasil['juta']:,.2f} juta"
+            )
+
+    st.write("")
+
+    with st.expander("Lihat spesifikasi kendaraan yang digunakan"):
+
+        data = st.session_state.input_terakhir
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write(f"**Tahun Produksi:** {data['year']}")
+            st.write(f"**Jarak Tempuh:** {data['mileage']:,} miles")
+            st.write(f"**Pajak:** £{data['tax']:,.2f}")
+
+        with col2:
+            st.write(f"**Konsumsi BBM:** {data['mpg']} MPG")
+            st.write(f"**Kapasitas Mesin:** {data['engineSize']} Liter")
 
     st.info(
-        f"Konversi menggunakan kurs asumsi "
-        f"£1 = Rp{kurs:,}. Nilai kurs dapat berubah."
+        "Catatan: Hasil merupakan estimasi berdasarkan model "
+        "Machine Learning, bukan harga jual pasti kendaraan. "
+        "Konversi mata uang menggunakan kurs tetap "
+        "Rp19.000 per GBP."
     )
 
-else:
 
-    st.info(
-        "Masukkan spesifikasi kendaraan, kemudian tekan "
-        "tombol HITUNG ESTIMASI HARGA MOBIL."
-    )
-
-# ==========================================
-# 13. INFORMASI APLIKASI
-# ==========================================
-
+# =====================================================
+# FOOTER
+# =====================================================
 st.divider()
 
-st.subheader("ℹ️ Informasi Sistem")
+col1, col2 = st.columns(2)
 
-st.write(
-    """
-    Aplikasi ini menggunakan algoritma **Linear Regression**
-    untuk memperkirakan harga mobil bekas Toyota berdasarkan
-    lima variabel, yaitu tahun produksi, jarak tempuh, pajak,
-    konsumsi bahan bakar, dan ukuran mesin.
+with col1:
+    st.caption("TOYOTA CAR PRICE ESTIMATOR")
 
-    Hasil prediksi merupakan estimasi berdasarkan pola data
-    pelatihan, bukan harga jual pasti kendaraan.
-    """
-)
-
-st.markdown(
-    """
-    <div style="
-        text-align:center;
-        padding:20px;
-        color:#65B5FF;
-        font-size:12px;
-        font-weight:bold;
-    ">
-        TOYOTA CAR PRICE ESTIMATOR
-        <br>
-        MACHINE LEARNING · LINEAR REGRESSION
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+with col2:
+    st.caption("Powered by Machine Learning | Linear Regression")
 
